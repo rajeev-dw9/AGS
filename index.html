@@ -1,0 +1,996 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AGS | Regulating Internal Alignment Flows for Robust Learning Under Spurious Correlations</title>
+  <meta name="description" content="Project page for Alignment-Gated Suppression (AGS), accepted at ICLR 2026.">
+  <style>
+    :root{
+      --bg:#ffffff;
+      --panel:#ffffff;
+      --ink:#0f172a;
+      --muted:#475569;
+      --line:#e2e8f0;
+      --blue:#2563eb;
+      --blue-soft:#dbeafe;
+      --amber:#f59e0b;
+      --amber-soft:#fff3c4;
+      --green:#059669;
+      --green-soft:#d1fae5;
+      --violet:#7c3aed;
+      --shadow:0 20px 50px rgba(15, 23, 42, 0.08);
+      --shadow-soft:0 12px 32px rgba(15, 23, 42, 0.06);
+      --radius:24px;
+      --radius-sm:16px;
+      --max:1200px;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color:var(--ink);
+      background:
+        radial-gradient(circle at 12% 0%, rgba(37, 99, 235, 0.08), transparent 22%),
+        radial-gradient(circle at 94% 10%, rgba(245, 158, 11, 0.08), transparent 18%),
+        linear-gradient(#fff, #fff);
+      line-height:1.6;
+    }
+
+    a{color:inherit;text-decoration:none}
+    img{max-width:100%;display:block}
+    code, pre{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
+    .container{max-width:var(--max);margin:0 auto;padding:0 24px}
+    .section{padding:88px 0}
+    .section-top{padding-top:120px}
+    .muted{color:var(--muted)}
+    .eyebrow{
+      display:inline-flex;align-items:center;gap:10px;
+      padding:8px 14px;border:1px solid var(--line);border-radius:999px;
+      color:#0b3ea6;background:rgba(219,234,254,.55);font-weight:700;font-size:.92rem;
+      backdrop-filter: blur(8px);
+    }
+    .eyebrow .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,var(--blue),#60a5fa)}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:6px 12px;
+      background:#f8fafc;border:1px solid var(--line);font-size:.9rem;font-weight:700;color:#334155
+    }
+    .nav-wrap{
+      position:sticky;top:0;z-index:40;background:rgba(255,255,255,.86);backdrop-filter: blur(14px);
+      border-bottom:1px solid rgba(226,232,240,.8)
+    }
+    nav{
+      display:flex;align-items:center;justify-content:space-between;gap:16px;
+      min-height:72px
+    }
+    .brand{
+      display:flex;align-items:center;gap:14px;font-weight:800;letter-spacing:-.02em
+    }
+    .brand-mark{
+      width:40px;height:40px;border-radius:14px;
+      background:
+        linear-gradient(145deg, rgba(37,99,235,.18), rgba(245,158,11,.14)),
+        #fff;
+      border:1px solid var(--line);
+      box-shadow: var(--shadow-soft);
+      position:relative;overflow:hidden;
+    }
+    .brand-mark::before,.brand-mark::after{
+      content:"";position:absolute;border-radius:999px
+    }
+    .brand-mark::before{
+      width:26px;height:26px;background:rgba(37,99,235,.9);left:-2px;top:8px;filter:blur(1px)
+    }
+    .brand-mark::after{
+      width:18px;height:18px;background:rgba(245,158,11,.92);right:4px;top:5px
+    }
+    .nav-links{
+      display:flex;flex-wrap:wrap;gap:18px;align-items:center;font-weight:600;color:#334155
+    }
+    .nav-links a{padding:8px 0;border-bottom:2px solid transparent}
+    .nav-links a:hover{color:var(--blue);border-color:rgba(37,99,235,.32)}
+    .hero{
+      display:grid;grid-template-columns:1.1fr .9fr;gap:44px;align-items:center
+    }
+    h1,h2,h3{margin:0;line-height:1.08;letter-spacing:-.04em}
+    h1{font-size:clamp(2.6rem,5.3vw,4.8rem)}
+    h2{font-size:clamp(2rem,3.8vw,3rem);margin-bottom:18px}
+    h3{font-size:1.25rem;letter-spacing:-.02em}
+    p{margin:0 0 16px}
+    .hero-title{margin:18px 0 18px}
+    .hero-copy{font-size:1.08rem;color:var(--muted);max-width:62ch}
+    .author-line{
+      margin-top:20px;font-size:1.05rem;font-weight:700;color:#1e293b
+    }
+    .affil-line{margin-top:8px;color:var(--muted)}
+    .button-row{
+      display:flex;flex-wrap:wrap;gap:14px;margin-top:26px
+    }
+    .btn{
+      display:inline-flex;align-items:center;justify-content:center;gap:10px;
+      padding:14px 18px;border-radius:16px;border:1px solid var(--line);
+      font-weight:800;transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+      box-shadow: var(--shadow-soft);
+      background:#fff;
+    }
+    .btn:hover{transform:translateY(-2px)}
+    .btn.primary{
+      color:#fff;background:linear-gradient(135deg,#2563eb,#1d4ed8);border-color:#2563eb
+    }
+    .btn.secondary{
+      color:#0f172a;background:#fff
+    }
+
+    .hero-card{
+      background:linear-gradient(180deg,#fff,#f8fbff);
+      border:1px solid var(--line);
+      border-radius:32px;
+      padding:28px;
+      box-shadow:var(--shadow);
+      position:relative;
+      overflow:hidden
+    }
+    .hero-card::before{
+      content:"";position:absolute;inset:auto -60px -70px auto;width:180px;height:180px;border-radius:50%;
+      background:radial-gradient(circle, rgba(245,158,11,.18), transparent 65%)
+    }
+    .hero-svg{
+      width:100%;height:auto
+    }
+
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+    .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+    .card{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:24px;
+      box-shadow: var(--shadow-soft);
+    }
+    .card.flat{box-shadow:none}
+    .card.tint-blue{background:linear-gradient(180deg,#fff,#f8fbff)}
+    .card.tint-amber{background:linear-gradient(180deg,#fff,#fffaf0)}
+    .card.tint-green{background:linear-gradient(180deg,#fff,#f4fff9)}
+    .card.tint-violet{background:linear-gradient(180deg,#fff,#faf7ff)}
+    .stat{
+      display:flex;flex-direction:column;gap:10px
+    }
+    .stat .value{
+      font-size:2.3rem;font-weight:900;letter-spacing:-.05em
+    }
+    .stat .label{
+      font-weight:800;color:#334155
+    }
+    .kicker{
+      color:var(--blue);font-size:.95rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em
+    }
+    .lead{
+      font-size:1.09rem;color:var(--muted);max-width:72ch
+    }
+
+    .method-steps{
+      display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:26px
+    }
+    .step{
+      position:relative;padding-top:22px
+    }
+    .step .step-num{
+      position:absolute;left:0;top:0;transform:translateY(-50%);
+      width:40px;height:40px;border-radius:12px;display:grid;place-items:center;
+      font-weight:900;color:#fff;background:linear-gradient(135deg,var(--blue),#60a5fa);
+      box-shadow: var(--shadow-soft)
+    }
+    .eq-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:26px}
+    .equation{
+      border:1px solid var(--line);border-radius:20px;padding:18px;background:#fcfdff
+    }
+    .equation .eq{
+      font-size:1.05rem;font-weight:800;color:#0f172a;margin-bottom:10px;
+      font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow:auto
+    }
+    .properties{
+      display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:26px
+    }
+    .property{
+      display:flex;gap:16px;align-items:flex-start;border:1px solid var(--line);border-radius:20px;
+      padding:18px;background:#fff
+    }
+    .property-icon{
+      min-width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-weight:900;color:#fff
+    }
+    .blue{background:linear-gradient(135deg,#2563eb,#3b82f6)}
+    .amber{background:linear-gradient(135deg,#f59e0b,#fbbf24)}
+    .green{background:linear-gradient(135deg,#059669,#34d399)}
+    .violet{background:linear-gradient(135deg,#7c3aed,#a78bfa)}
+
+    .dataset-grid{
+      display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:28px
+    }
+    .dataset-card h3{margin-bottom:10px}
+    .dataset-card p{font-size:.98rem}
+
+    .results-grid{
+      display:grid;grid-template-columns:repeat(2,1fr);gap:18px
+    }
+    .metric-card{
+      border:1px solid var(--line);border-radius:24px;padding:22px;background:#fff;
+      box-shadow: var(--shadow-soft)
+    }
+    .metric-card .big{
+      font-size:2.7rem;font-weight:900;letter-spacing:-.05em;margin:8px 0
+    }
+    .mini-note{font-size:.94rem;color:var(--muted)}
+    .bar-list{display:grid;gap:14px;margin-top:18px}
+    .bar-row{
+      display:grid;grid-template-columns:110px 1fr 68px;gap:12px;align-items:center
+    }
+    .bar-label{font-weight:800;color:#334155}
+    .bar-track{
+      height:14px;border-radius:999px;background:#eef2f7;overflow:hidden;border:1px solid #e5ebf2
+    }
+    .bar-fill{
+      height:100%;border-radius:999px;background:linear-gradient(90deg,#60a5fa,#2563eb);
+    }
+    .bar-fill.amber{background:linear-gradient(90deg,#fbbf24,#f59e0b)}
+    .bar-fill.green{background:linear-gradient(90deg,#34d399,#059669)}
+    .bar-fill.violet{background:linear-gradient(90deg,#a78bfa,#7c3aed)}
+    .bar-value{font-weight:900;text-align:right}
+    .table-wrap{
+      overflow:auto;border:1px solid var(--line);border-radius:22px;background:#fff;box-shadow:var(--shadow-soft)
+    }
+    table{width:100%;border-collapse:collapse;min-width:760px}
+    th,td{padding:14px 16px;text-align:left;border-bottom:1px solid #edf2f7}
+    th{
+      background:#f8fafc;font-size:.92rem;text-transform:uppercase;letter-spacing:.06em;color:#475569
+    }
+    tr:last-child td{border-bottom:none}
+    td strong{color:#0f172a}
+    .highlight-row td{background:#f8fbff}
+    .figure-card{
+      border:1px solid var(--line);border-radius:24px;padding:18px;background:#fff;box-shadow:var(--shadow-soft)
+    }
+    .figure-card img{
+      border-radius:18px;border:1px solid #e5e7eb;background:#fff
+    }
+    .figure-card figcaption{
+      margin-top:14px;color:var(--muted);font-size:.96rem
+    }
+    .two-up{
+      display:grid;grid-template-columns:1fr 1fr;gap:18px
+    }
+    .chip-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+    .chip{
+      padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:#fff;
+      font-weight:700;color:#334155
+    }
+    .impl-table td:first-child, .impl-table th:first-child{position:sticky;left:0;background:inherit}
+    .quote{
+      border-left:4px solid var(--blue);padding:10px 0 10px 16px;color:#334155;font-size:1.05rem
+    }
+    .bibtex{
+      position:relative;background:#0f172a;color:#e2e8f0;border-radius:24px;padding:24px;border:1px solid #1e293b;
+      box-shadow: var(--shadow)
+    }
+    .bibtex pre{
+      white-space:pre-wrap;word-break:break-word;margin:0;line-height:1.75;font-size:.96rem
+    }
+    .copy-btn{
+      position:absolute;top:18px;right:18px;padding:10px 14px;border:none;border-radius:12px;
+      font-weight:800;cursor:pointer;background:#1e293b;color:#fff
+    }
+    .copy-btn:hover{background:#334155}
+    footer{
+      border-top:1px solid var(--line);padding:28px 0 42px;color:var(--muted);font-size:.96rem
+    }
+    .reveal{
+      opacity:0;transform:translateY(16px);transition:opacity .6s ease, transform .6s ease
+    }
+    .reveal.visible{
+      opacity:1;transform:translateY(0)
+    }
+
+    @media (max-width: 1100px){
+      .hero,.grid-4,.dataset-grid,.method-steps,.eq-grid{grid-template-columns:1fr 1fr}
+      .grid-3,.grid-2,.results-grid,.two-up,.properties{grid-template-columns:1fr}
+    }
+    @media (max-width: 780px){
+      .section{padding:72px 0}
+      .section-top{padding-top:96px}
+      nav{padding:10px 0}
+      .nav-links{display:none}
+      .hero,.grid-4,.dataset-grid,.method-steps,.eq-grid,.grid-3,.grid-2,.results-grid,.two-up,.properties{grid-template-columns:1fr}
+      .container{padding:0 18px}
+      .bar-row{grid-template-columns:92px 1fr 56px}
+      .hero-card{padding:18px}
+    }
+  </style>
+</head>
+<body>
+  <div class="nav-wrap">
+    <div class="container">
+      <nav>
+        <a class="brand" href="#top" aria-label="AGS home">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span>AGS Project Page</span>
+        </a>
+        <div class="nav-links">
+          <a href="#overview">Overview</a>
+          <a href="#method">Method</a>
+          <a href="#results">Results</a>
+          <a href="#analysis">Analysis</a>
+          <a href="#implementation">Implementation</a>
+          <a href="#bibtex">BibTeX</a>
+        </div>
+      </nav>
+    </div>
+  </div>
+
+  <main id="top">
+    <section class="section section-top">
+      <div class="container hero">
+        <div>
+          <span class="eyebrow"><span class="dot"></span>Accepted at ICLR 2026</span>
+          <h1 class="hero-title">Regulating Internal Alignment Flows for Robust Learning Under Spurious Correlations</h1>
+          <p class="hero-copy">
+            Alignment-Gated Suppression (AGS) is a lightweight, group-agnostic regularizer that intervenes inside the network during training.
+            It tracks class-conditional alignment energy, suppresses the most extreme shortcut-dominated pathways, and improves worst-group robustness without needing group labels.
+          </p>
+          <div class="author-line">Rajeev Ranjan Dwivedi* · Mohammedkaif Kalagond* · Niramay M. Patel · Vinod K Kurmi</div>
+          <div class="affil-line">Indian Institute of Science Education and Research Bhopal (IISERB) · *Equal contribution</div>
+          <div class="button-row">
+            <a class="btn primary" href="assets/paper.pdf">Read Paper</a>
+            <a class="btn secondary" href="#results">See Results</a>
+            <a class="btn secondary" href="#bibtex">Copy Citation</a>
+          </div>
+          <div class="chip-row" style="margin-top:22px">
+            <span class="chip">No group labels</span>
+            <span class="chip">&lt; 5% training overhead</span>
+            <span class="chip">Plug-and-play with ERM</span>
+            <span class="chip">Improves calibration</span>
+          </div>
+        </div>
+
+        <div class="hero-card reveal">
+          <svg class="hero-svg" viewBox="0 0 760 560" role="img" aria-label="AGS overview diagram">
+            <defs>
+              <linearGradient id="g1" x1="0%" x2="100%">
+                <stop offset="0%" stop-color="#2563eb"/>
+                <stop offset="100%" stop-color="#60a5fa"/>
+              </linearGradient>
+              <linearGradient id="g2" x1="0%" x2="100%">
+                <stop offset="0%" stop-color="#f59e0b"/>
+                <stop offset="100%" stop-color="#fbbf24"/>
+              </linearGradient>
+              <linearGradient id="g3" x1="0%" x2="100%">
+                <stop offset="0%" stop-color="#059669"/>
+                <stop offset="100%" stop-color="#34d399"/>
+              </linearGradient>
+              <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#0f172a" flood-opacity="0.10"/>
+              </filter>
+            </defs>
+
+            <rect x="14" y="16" width="732" height="528" rx="28" fill="#ffffff" stroke="#e2e8f0"/>
+            <text x="46" y="58" font-size="30" font-weight="800" fill="#0f172a">How AGS works</text>
+            <text x="46" y="88" font-size="18" fill="#475569">Track alignment, smooth it with EMA, then contract shortcut-heavy links.</text>
+
+            <rect x="42" y="126" width="150" height="108" rx="20" fill="#f8fbff" stroke="#dbeafe" filter="url(#softShadow)"/>
+            <text x="60" y="162" font-size="20" font-weight="800" fill="#0f172a">1. Forward pass</text>
+            <text x="60" y="192" font-size="16" fill="#475569">Input x →</text>
+            <text x="60" y="216" font-size="16" fill="#475569">features φθ(x)</text>
+
+            <rect x="224" y="126" width="160" height="108" rx="20" fill="#fffaf0" stroke="#fde68a" filter="url(#softShadow)"/>
+            <text x="242" y="162" font-size="20" font-weight="800" fill="#0f172a">2. Alignment score</text>
+            <text x="242" y="192" font-size="17" fill="#334155">e<tspan baseline-shift="sub" font-size="12">jk</tspan>(x) = - p<tspan baseline-shift="sub" font-size="12">k</tspan>(x)W<tspan baseline-shift="sub" font-size="12">jk</tspan>φ<tspan baseline-shift="sub" font-size="12">j</tspan>(x)</text>
+            <text x="242" y="218" font-size="15" fill="#475569">More negative = stronger support</text>
+
+            <rect x="414" y="126" width="140" height="108" rx="20" fill="#f4fff9" stroke="#a7f3d0" filter="url(#softShadow)"/>
+            <text x="432" y="162" font-size="20" font-weight="800" fill="#0f172a">3. EMA</text>
+            <text x="432" y="192" font-size="16" fill="#475569">Low-variance,</text>
+            <text x="432" y="216" font-size="16" fill="#475569">history-aware gates</text>
+
+            <rect x="582" y="126" width="130" height="108" rx="20" fill="#faf7ff" stroke="#ddd6fe" filter="url(#softShadow)"/>
+            <text x="600" y="162" font-size="20" font-weight="800" fill="#0f172a">4. Suppress</text>
+            <text x="600" y="192" font-size="16" fill="#475569">Percentile-gated</text>
+            <text x="600" y="216" font-size="16" fill="#475569">weight decay</text>
+
+            <path d="M192 180 H224" stroke="url(#g1)" stroke-width="8" stroke-linecap="round"/>
+            <path d="M384 180 H414" stroke="url(#g2)" stroke-width="8" stroke-linecap="round"/>
+            <path d="M554 180 H582" stroke="url(#g3)" stroke-width="8" stroke-linecap="round"/>
+
+            <g transform="translate(56,282)">
+              <rect x="0" y="0" width="650" height="210" rx="24" fill="#fbfdff" stroke="#e2e8f0"/>
+              <text x="24" y="34" font-size="24" font-weight="800" fill="#0f172a">Interpretation</text>
+              <text x="24" y="66" font-size="17" fill="#475569">Shortcut routes get progressively contracted, while the rest of the representation stays relatively influential.</text>
+
+              <path d="M42 142 C110 128, 138 72, 208 74 C276 76, 304 124, 366 128 C432 132, 470 90, 544 88 C592 86, 620 104, 628 120"
+                    fill="none" stroke="#2563eb" stroke-width="8" stroke-linecap="round"/>
+              <text x="44" y="170" font-size="16" fill="#2563eb" font-weight="700">Robust pathway preserved</text>
+
+              <path d="M42 112 C104 84, 138 160, 216 152 C292 144, 326 56, 398 52 C470 48, 510 118, 574 142 C610 156, 634 154, 648 146"
+                    fill="none" stroke="#f59e0b" stroke-width="8" stroke-linecap="round" stroke-dasharray="11 13"/>
+              <text x="334" y="182" font-size="16" fill="#f59e0b" font-weight="700">Spurious shortcut path attenuated</text>
+
+              <circle cx="392" cy="52" r="14" fill="#fff" stroke="#f59e0b" stroke-width="5"/>
+              <line x1="382" y1="42" x2="402" y2="62" stroke="#f59e0b" stroke-width="4"/>
+              <line x1="402" y1="42" x2="382" y2="62" stroke="#f59e0b" stroke-width="4"/>
+
+              <rect x="496" y="22" width="118" height="44" rx="14" fill="#eef6ff" stroke="#dbeafe"/>
+              <text x="513" y="50" font-size="18" font-weight="800" fill="#1d4ed8">No group labels</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <section id="overview" class="section">
+      <div class="container">
+        <div class="kicker">Overview</div>
+        <h2>Robustness, without the annotation tax</h2>
+        <p class="lead">
+          Deep models often latch onto background, attribute, or dataset artifacts because those cues are easy to optimize.
+          AGS tackles this problem from the inside of the model instead of only acting on data sampling or loss design.
+          It computes a class-conditional, confidence-weighted alignment signal for each neuron-to-class link and selectively shrinks the most extreme contributors.
+        </p>
+
+        <div class="grid-4" style="margin-top:28px">
+          <div class="card stat tint-blue reveal">
+            <div class="label">Training overhead</div>
+            <div class="value">&lt; 5%</div>
+            <div class="muted">Only a D × C EMA buffer plus a percentile gate.</div>
+          </div>
+          <div class="card stat tint-amber reveal">
+            <div class="label">CelebA conflicting accuracy</div>
+            <div class="value">93.95%</div>
+            <div class="muted">Best reported split accuracy in the paper’s comparison table.</div>
+          </div>
+          <div class="card stat tint-green reveal">
+            <div class="label">Waterbirds average accuracy</div>
+            <div class="value">97.44%</div>
+            <div class="muted">Top average accuracy while staying competitive on worst-group accuracy.</div>
+          </div>
+          <div class="card stat tint-violet reveal">
+            <div class="label">BAR average accuracy</div>
+            <div class="value">76.09%</div>
+            <div class="muted">State-of-the-art average accuracy in the benchmark summary.</div>
+          </div>
+        </div>
+
+        <div class="grid-3" style="margin-top:28px">
+          <div class="card reveal">
+            <span class="pill">Why the problem matters</span>
+            <h3 style="margin:16px 0 10px">Shortcut learning quietly erodes worst-case reliability</h3>
+            <p class="muted">
+              High average accuracy can hide catastrophic failures on minority or bias-conflicting groups.
+              The paper focuses on closing that gap without asking for group labels.
+            </p>
+          </div>
+          <div class="card reveal">
+            <span class="pill">What makes AGS different</span>
+            <h3 style="margin:16px 0 10px">It regulates internal pathways, not just examples</h3>
+            <p class="muted">
+              Rather than relying purely on reweighting, environment labels, or post hoc pruning, AGS contracts shortcut-heavy links during training itself.
+            </p>
+          </div>
+          <div class="card reveal">
+            <span class="pill">What the paper shows</span>
+            <h3 style="margin:16px 0 10px">Better robustness with strong average accuracy</h3>
+            <p class="muted">
+              Across Waterbirds, CelebA, BAR, and a COCO gender-object bias construction, AGS improves average accuracy, worst-group accuracy, and calibration.
+            </p>
+          </div>
+        </div>
+
+        <div class="card tint-blue reveal" style="margin-top:28px">
+          <div class="quote">
+            “These results suggest that directly regulating the internal flow of class-conditional alignment is a simple, scalable, and effective route to robustness under spurious correlations, particularly when group labels are unavailable.”
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="method" class="section">
+      <div class="container">
+        <div class="kicker">Method</div>
+        <h2>Alignment-Gated Suppression in one page</h2>
+        <p class="lead">
+          AGS works on the final linear classifier by default. For every class, it estimates which neuron-to-class links repeatedly show strong, confidence-weighted alignment.
+          The lower tail of this distribution is then selectively decayed with a percentile-gated multiplicative update.
+        </p>
+
+        <div class="method-steps">
+          <div class="card step reveal">
+            <div class="step-num">1</div>
+            <h3>Measure per-example alignment</h3>
+            <p class="muted">Use the model’s own prediction confidence and the current classifier weights to score each neuron-class link.</p>
+          </div>
+          <div class="card step reveal">
+            <div class="step-num">2</div>
+            <h3>Aggregate on-batch, class-wise</h3>
+            <p class="muted">Average the alignment signal over examples with the same label, with a small epsilon guard for missing classes.</p>
+          </div>
+          <div class="card step reveal">
+            <div class="step-num">3</div>
+            <h3>Smooth with EMA</h3>
+            <p class="muted">Maintain a stable, low-variance running estimate so gates do not jitter wildly from noisy mini-batches.</p>
+          </div>
+          <div class="card step reveal">
+            <div class="step-num">4</div>
+            <h3>Apply percentile-gated decay</h3>
+            <p class="muted">After warm-up, decay only the most extreme contributors for each class while keeping a mild global decay for stability.</p>
+          </div>
+        </div>
+
+        <div class="eq-grid">
+          <div class="equation reveal">
+            <div class="eq">e<sub>jk</sub>(x) = - p<sub>k</sub>(x) W<sub>jk</sub> φ<sub>j</sub>(x)</div>
+            <p class="muted">Alignment score. More negative means stronger confidence-weighted support for class k.</p>
+          </div>
+          <div class="equation reveal">
+            <div class="eq">Ē<sup>(t)</sup><sub>jk</sub> = 1 / (|B<sub>k</sub>| + ε) Σ e<sub>jk</sub>(x)</div>
+            <p class="muted">Mini-batch class-conditional alignment energy.</p>
+          </div>
+          <div class="equation reveal">
+            <div class="eq">Ẽ<sup>(t)</sup><sub>jk</sub> = (1 - β) Ē<sup>(t)</sup><sub>jk</sub> + β Ẽ<sup>(t-1)</sup><sub>jk</sub></div>
+            <p class="muted">EMA smoothing to reduce gate flips and stabilize training.</p>
+          </div>
+          <div class="equation reveal">
+            <div class="eq">τ<sup>(t)</sup><sub>k</sub> = Percentile<sub>q</sub>({Ẽ<sup>(t)</sup><sub>·k</sub>})</div>
+            <p class="muted">Within-class threshold. It is scale-free because it depends on rank, not absolute magnitude.</p>
+          </div>
+          <div class="equation reveal">
+            <div class="eq">s<sup>(t)</sup><sub>jk</sub> = I[Ẽ<sup>(t)</sup><sub>jk</sub> &lt; τ<sup>(t)</sup><sub>k</sub>]</div>
+            <p class="muted">Binary gate that flags the lower-tail contributors for class k.</p>
+          </div>
+          <div class="equation reveal">
+            <div class="eq">W<sub>jk</sub> ← (1 - α s<sup>(t)</sup><sub>jk</sub>)(1 - 0.05 α) W<sub>jk</sub></div>
+            <p class="muted">Selective contraction with a small global shrink term to prevent scale oscillation.</p>
+          </div>
+        </div>
+
+        <div class="properties">
+          <div class="property reveal">
+            <div class="property-icon blue">1</div>
+            <div>
+              <h3>Confidence-weighted targeting</h3>
+              <p class="muted">High-confidence, class-aligned routes receive larger-magnitude alignment and are more likely to be targeted. The formulation is invariant to logit-preserving rescaling.</p>
+            </div>
+          </div>
+          <div class="property reveal">
+            <div class="property-icon amber">2</div>
+            <div>
+              <h3>Stable, budgeted gating</h3>
+              <p class="muted">Percentile gates cap how many features are suppressed per class, while EMA smoothing keeps decisions stable even with noisy batches.</p>
+            </div>
+          </div>
+          <div class="property reveal">
+            <div class="property-icon green">3</div>
+            <div>
+              <h3>Contractive and sparsifying</h3>
+              <p class="muted">Persistently gated coordinates shrink geometrically, acting like structured, class-conditional capacity control rather than blunt uniform regularization.</p>
+            </div>
+          </div>
+          <div class="property reveal">
+            <div class="property-icon violet">4</div>
+            <div>
+              <h3>Suppress bias, preserve robust cues</h3>
+              <p class="muted">Shortcut-heavy paths are attenuated, while robust features that avoid the lower tail are left intact and remain influential in the final decision.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="kicker">Benchmarks</div>
+        <h2>Where AGS is tested</h2>
+        <p class="lead">
+          The paper evaluates AGS on standard spurious-correlation benchmarks plus a COCO construction with gender-object bias.
+          Together, these datasets stress background bias, attribute bias, action-context bias, and object-context bias.
+        </p>
+
+        <div class="dataset-grid">
+          <div class="card dataset-card tint-blue reveal">
+            <h3>Waterbirds</h3>
+            <p class="muted">Background shortcut benchmark where waterbirds usually co-occur with water and landbirds with land. Minority groups flip that correlation.</p>
+          </div>
+          <div class="card dataset-card tint-amber reveal">
+            <h3>CelebA</h3>
+            <p class="muted">Gender prediction with hair color as the spurious attribute, testing whether the model over-relies on correlated appearance cues.</p>
+          </div>
+          <div class="card dataset-card tint-green reveal">
+            <h3>BAR</h3>
+            <p class="muted">Action recognition under shifted contexts, such as indoor climbing when training mostly observes the stereotypical outdoor setting.</p>
+          </div>
+          <div class="card dataset-card tint-violet reveal">
+            <h3>COCO Gender/Object Bias</h3>
+            <p class="muted">A caption-labeled binary gender task with sports/outdoor and kitchen/indoor objects used as the spurious correlates.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="results" class="section">
+      <div class="container">
+        <div class="kicker">Results</div>
+        <h2>Strong average accuracy, stronger worst-case behavior</h2>
+        <p class="lead">
+          AGS moves the robustness frontier in a useful direction. The paper reports top average accuracy on Waterbirds, best benchmark numbers on CelebA’s unbiased and conflicting splits,
+          state-of-the-art average accuracy on BAR, and the strongest average accuracy on the COCO gender-object bias setting.
+        </p>
+
+        <div class="results-grid" style="margin-top:28px">
+          <div class="metric-card reveal">
+            <span class="pill">CelebA and BAR</span>
+            <div class="big">93.95%</div>
+            <div style="font-weight:800;color:#334155">CelebA conflicting accuracy</div>
+            <p class="mini-note">More than 5 points above the strongest prior method listed in the paper’s table.</p>
+            <div class="bar-list">
+              <div class="bar-row">
+                <div class="bar-label">Ours</div>
+                <div class="bar-track"><div class="bar-fill amber" style="width:93.95%"></div></div>
+                <div class="bar-value">93.95</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">EvA-E</div>
+                <div class="bar-track"><div class="bar-fill" style="width:88.74%"></div></div>
+                <div class="bar-value">88.74</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">SiFER</div>
+                <div class="bar-track"><div class="bar-fill" style="width:88.04%"></div></div>
+                <div class="bar-value">88.04</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">ERM</div>
+                <div class="bar-track"><div class="bar-fill" style="width:52.52%"></div></div>
+                <div class="bar-value">52.52</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="metric-card reveal">
+            <span class="pill">Waterbirds and COCO</span>
+            <div class="big">97.44%</div>
+            <div style="font-weight:800;color:#334155">Waterbirds average accuracy</div>
+            <p class="mini-note">Top average accuracy in the comparison table, paired with 80.93% worst-group accuracy.</p>
+            <div class="bar-list">
+              <div class="bar-row">
+                <div class="bar-label">Ours</div>
+                <div class="bar-track"><div class="bar-fill green" style="width:97.44%"></div></div>
+                <div class="bar-value">97.44</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">EvA-E</div>
+                <div class="bar-track"><div class="bar-fill" style="width:96.95%"></div></div>
+                <div class="bar-value">96.95</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">SiFER</div>
+                <div class="bar-track"><div class="bar-fill" style="width:96.11%"></div></div>
+                <div class="bar-value">96.11</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">ERM</div>
+                <div class="bar-track"><div class="bar-fill" style="width:94.10%"></div></div>
+                <div class="bar-value">94.10</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="metric-card reveal">
+            <span class="pill">BAR</span>
+            <div class="big">76.09%</div>
+            <div style="font-weight:800;color:#334155">Average accuracy on BAR</div>
+            <p class="mini-note">A +2.39 point gain over EvA-E and +15.58 over vanilla ERM in the benchmark summary.</p>
+            <div class="bar-list">
+              <div class="bar-row">
+                <div class="bar-label">Ours</div>
+                <div class="bar-track"><div class="bar-fill violet" style="width:76.09%"></div></div>
+                <div class="bar-value">76.09</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">EvA-E</div>
+                <div class="bar-track"><div class="bar-fill" style="width:73.70%"></div></div>
+                <div class="bar-value">73.70</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">SiFER</div>
+                <div class="bar-track"><div class="bar-fill" style="width:72.08%"></div></div>
+                <div class="bar-value">72.08</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">ERM</div>
+                <div class="bar-track"><div class="bar-fill" style="width:60.51%"></div></div>
+                <div class="bar-value">60.51</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="metric-card reveal">
+            <span class="pill">COCO gender-object bias</span>
+            <div class="big">84.27%</div>
+            <div style="font-weight:800;color:#334155">Average accuracy on COCO</div>
+            <p class="mini-note">Best average score in the validation comparison, while notably shrinking bias gaps.</p>
+            <div class="bar-list">
+              <div class="bar-row">
+                <div class="bar-label">Ours</div>
+                <div class="bar-track"><div class="bar-fill amber" style="width:84.27%"></div></div>
+                <div class="bar-value">84.27</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">GMBM</div>
+                <div class="bar-track"><div class="bar-fill" style="width:83.54%"></div></div>
+                <div class="bar-value">83.54</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">BAdd</div>
+                <div class="bar-track"><div class="bar-fill" style="width:81.76%"></div></div>
+                <div class="bar-value">81.76</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">ERM</div>
+                <div class="bar-track"><div class="bar-fill" style="width:69.50%"></div></div>
+                <div class="bar-value">69.50</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-wrap" style="margin-top:28px">
+          <table>
+            <thead>
+              <tr>
+                <th>Method</th>
+                <th>BAR Avg.</th>
+                <th>CelebA Unbiased</th>
+                <th>CelebA Conflicting</th>
+                <th>Waterbirds Avg.</th>
+                <th>Waterbirds Worst</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Vanilla</td><td>60.51 ± 4.3</td><td>70.25 ± 0.4</td><td>52.52 ± 0.2</td><td>94.10 ± 4.3</td><td>63.74 ± 3.2</td></tr>
+              <tr><td>LfF</td><td>62.98 ± 2.8</td><td>84.24 ± 0.4</td><td>81.24 ± 1.4</td><td>89.60 ± 2.4</td><td>74.98 ± 2.1</td></tr>
+              <tr><td>EIIL</td><td>68.44 ± 1.2</td><td>85.70 ± 1.6</td><td>81.70 ± 1.5</td><td>95.88 ± 1.7</td><td>77.20 ± 1.0</td></tr>
+              <tr><td>JTT</td><td>68.53 ± 3.2</td><td>86.40 ± 4.6</td><td>77.80 ± 2.5</td><td>93.70 ± 0.5</td><td>84.98 ± 0.5</td></tr>
+              <tr><td>SiFER</td><td>72.08 ± 0.4</td><td>90.00 ± 0.9</td><td>88.04 ± 1.2</td><td>96.11 ± 0.6</td><td>77.22 ± 0.4</td></tr>
+              <tr><td>EvA-E</td><td>73.70 ± 0.8</td><td>90.51 ± 1.0</td><td>88.74 ± 1.4</td><td>96.95 ± 0.9</td><td>81.31 ± 1.5</td></tr>
+              <tr class="highlight-row"><td><strong>AGS (Ours)</strong></td><td><strong>76.09 ± 0.38</strong></td><td><strong>95.63 ± 0.28</strong></td><td><strong>93.95 ± 1.06</strong></td><td><strong>97.44 ± 0.29</strong></td><td><strong>80.93 ± 1.32</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-wrap" style="margin-top:20px">
+          <table>
+            <thead>
+              <tr>
+                <th>Method</th>
+                <th>COCO Avg.</th>
+                <th>Sports Unbiased</th>
+                <th>Sports Conflicting</th>
+                <th>Kitchen Unbiased</th>
+                <th>Kitchen Conflicting</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Vanilla</td><td>69.50</td><td>70.81</td><td>64.61</td><td>73.20</td><td>67.36</td></tr>
+              <tr><td>FairKL</td><td>73.67</td><td>76.32</td><td>67.11</td><td>74.35</td><td>76.90</td></tr>
+              <tr><td>EnD</td><td>76.95</td><td>77.11</td><td>70.97</td><td>82.38</td><td>77.34</td></tr>
+              <tr><td>FLAC</td><td>79.88</td><td>80.02</td><td>77.31</td><td>80.22</td><td>79.95</td></tr>
+              <tr><td>BAdd</td><td>81.76</td><td>81.28</td><td>77.81</td><td>82.91</td><td>83.05</td></tr>
+              <tr><td>GMBM</td><td>83.54</td><td>83.78</td><td>83.85</td><td>83.19</td><td>83.35</td></tr>
+              <tr class="highlight-row"><td><strong>AGS (Ours)</strong></td><td><strong>84.27</strong></td><td><strong>84.53</strong></td><td><strong>83.86</strong></td><td><strong>85.41</strong></td><td><strong>83.26</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid-3" style="margin-top:24px">
+          <div class="card tint-blue reveal">
+            <h3>Bias gap reduction on COCO</h3>
+            <p class="muted">Sports gap shrinks from 6.20 to 0.67. Kitchen gap shrinks from 5.84 to 2.15. AGS redistributes reliance toward context-invariant signals.</p>
+          </div>
+          <div class="card tint-amber reveal">
+            <h3>Waterbirds trade-off</h3>
+            <p class="muted">AGS achieves the best average accuracy and near-top worst-group accuracy, highlighting a practical Pareto balance between average and worst-case performance.</p>
+          </div>
+          <div class="card tint-green reveal">
+            <h3>Scales beyond the small benchmarks</h3>
+            <p class="muted">On the ImageNet-9 Backgrounds Challenge, ERM+AGS improves Original, Mixed-Same, Mixed-Rand, and Mixed-Next accuracy over ERM.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="analysis" class="section">
+      <div class="container">
+        <div class="kicker">Analysis</div>
+        <h2>What the ablations and figures say</h2>
+        <p class="lead">
+          The paper does more than report final scores. It shows where the gains come from, how stable the method is, and what kinds of pathways AGS learns to suppress.
+        </p>
+
+        <div class="two-up" style="margin-top:28px">
+          <figure class="figure-card reveal">
+            <img src="assets/heatmap_ablation.png" alt="Heatmap showing average accuracy as a function of batch size and decay alpha.">
+            <figcaption>
+              <strong>Decay α and batch size.</strong> Moderate decay and sufficiently large mini-batches stabilize gating and improve average accuracy.
+              Very small batches and aggressive decay can over-suppress.
+            </figcaption>
+          </figure>
+
+          <div class="card reveal">
+            <span class="pill">Sanity-check ablation on Waterbirds</span>
+            <div class="table-wrap" style="margin-top:16px;box-shadow:none">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Variant</th>
+                    <th>Worst-group</th>
+                    <th>Average</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td>AGS (full)</td><td>79.4</td><td>97.1</td></tr>
+                  <tr><td>w/o confidence weighting</td><td>73.9</td><td>91.8</td></tr>
+                  <tr><td>w/o EMA</td><td>75.2</td><td>91.7</td></tr>
+                  <tr><td>EvA-style activation-only proxy</td><td>70.1</td><td>90.9</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="muted" style="margin-top:16px">
+              The full training-time design matters. Replacing the parameter-space alignment signal with an activation-only proxy leads to a major drop in worst-group accuracy.
+            </p>
+          </div>
+        </div>
+
+        <div class="two-up" style="margin-top:18px">
+          <figure class="figure-card reveal">
+            <img src="assets/figure2_alignment_densities.png" alt="Alignment density plots for six action classes comparing robust and spurious features.">
+            <figcaption>
+              <strong>Alignment densities.</strong> Across all six action classes, features identified as more spurious cluster at lower alignment energies than the robust ones,
+              supporting the idea that AGS can separate and suppress brittle contributors.
+            </figcaption>
+          </figure>
+
+          <figure class="figure-card reveal">
+            <img src="assets/figure3_spuriousness_scatter.png" alt="Scatter plots showing a negative association between spuriousness and alignment energy.">
+            <figcaption>
+              <strong>Spuriousness-alignment coupling.</strong> Features with higher gate frequency tend to have lower alignment energy.
+              The negative trend is visible across classes and matches the proposed mechanism.
+            </figcaption>
+          </figure>
+        </div>
+
+        <div class="grid-3" style="margin-top:24px">
+          <div class="card reveal">
+            <h3>Component-wise gains are monotonic</h3>
+            <p class="muted">Starting from ERM, adding confidence weighting improves worst-group accuracy, adding EMA helps further, and percentile gating delivers the biggest final jump.</p>
+          </div>
+          <div class="card reveal">
+            <h3>Percentiles keep control scale-free</h3>
+            <p class="muted">Because suppression depends on within-class order statistics, AGS remains stable under logit-preserving rescaling and avoids brittle hand-tuned thresholds.</p>
+          </div>
+          <div class="card reveal">
+            <h3>Mechanistic story matches the numbers</h3>
+            <p class="muted">The paper’s discussion links AGS to minority-margin gains, path-norm-like capacity control, and improved stability through EMA-smoothed gating.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="implementation" class="section">
+      <div class="container">
+        <div class="kicker">Implementation</div>
+        <h2>Training recipe and practical details</h2>
+        <p class="lead">
+          The default setup is intentionally light. AGS is attached to the penultimate representation and final classifier, uses a short warm-up, and adds only small bookkeeping on top of standard fine-tuning.
+        </p>
+
+        <div class="table-wrap" style="margin-top:26px">
+          <table class="impl-table">
+            <thead>
+              <tr>
+                <th>Dataset</th>
+                <th>Batch size</th>
+                <th>Epochs</th>
+                <th>Optimizer</th>
+                <th>AGS hyperparameters (α, T<sub>w</sub>, β, q)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Waterbirds</td><td>32</td><td>100</td><td>Adam, lr = 1e-4, wd = 1e-4</td><td>(0.075, 5, 0.75, 20)</td></tr>
+              <tr><td>CelebA</td><td>32</td><td>30</td><td>Adam, lr = 1e-4, wd = 1e-4</td><td>(0.075, 5, 0.75, 20)</td></tr>
+              <tr><td>COCO (ours)</td><td>32</td><td>50</td><td>Adam, lr = 1e-4, wd = 1e-4</td><td>(0.035, 5, 0.75, 20)</td></tr>
+              <tr><td>BAR</td><td>8</td><td>50</td><td>SGD, lr = 1e-3, wd = 1e-4</td><td>(0.075, 5, 0.75, 20)</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid-3" style="margin-top:24px">
+          <div class="card tint-blue reveal">
+            <h3>Backbone</h3>
+            <p class="muted">ResNet-50 fine-tuned end-to-end from ImageNet initialization with standard augmentations such as random resized crops, flips, and mild color jitter.</p>
+          </div>
+          <div class="card tint-amber reveal">
+            <h3>State</h3>
+            <p class="muted">AGS stores only a D × C EMA buffer and stop-gradient gating state. No architectural edits and no gradients through the gates are required.</p>
+          </div>
+          <div class="card tint-green reveal">
+            <h3>Selection metric</h3>
+            <p class="muted">Worst-group accuracy on the validation split is the primary model-selection criterion, except on BAR where average accuracy is reported.</p>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-top:24px">
+          <div class="card reveal">
+            <span class="pill">Complementarity</span>
+            <h3 style="margin:16px 0 10px">AGS plays well with other robustness tools</h3>
+            <p class="muted">
+              The paper positions AGS as complementary to data- and loss-level methods such as GroupDRO, IRM, JTT, and LfF.
+              Its intervention point is the internal weight/connection level, which makes it a neat plug-and-play addition to standard training loops.
+            </p>
+          </div>
+          <div class="card reveal">
+            <span class="pill">Limitations and future work</span>
+            <h3 style="margin:16px 0 10px">Where the method could grow next</h3>
+            <p class="muted">
+              The paper notes that very small or highly imbalanced batches can destabilize thresholds, strong suppression can underfit entangled regimes, and earlier layers may also carry spurious pathways.
+              Suggested extensions include adaptive budgets, variance-reduced estimation, layer-wise gating, and integration with group discovery or DRO.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="bibtex" class="section">
+      <div class="container">
+        <div class="kicker">Citation</div>
+        <h2>BibTeX</h2>
+        <div class="bibtex reveal">
+          <button class="copy-btn" onclick="copyBibtex()">Copy</button>
+          <pre id="bibtexText">@inproceedings{dwivedi2026ags,
+  title     = {Regulating Internal Alignment Flows for Robust Learning Under Spurious Correlations},
+  author    = {Dwivedi, Rajeev Ranjan and Kalagond, Mohammedkaif and Patel, Niramay M. and Kurmi, Vinod K},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2026}
+}</pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <div>
+        Project page built from the ICLR 2026 paper. Replace placeholder links or add code, video, and supplementary material as needed before publishing on GitHub Pages.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function copyBibtex() {
+      const text = document.getElementById('bibtexText').innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        const old = btn.textContent;
+        btn.textContent = 'Copied';
+        setTimeout(() => btn.textContent = old, 1200);
+      });
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) entry.target.classList.add('visible');
+      });
+    }, { threshold: 0.12 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>
